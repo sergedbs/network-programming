@@ -1,0 +1,23 @@
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+img {
+  transition: transform 0.2s ease-in-out;
+}
+
+img:hover {
+  transform: scale(1.05);
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+footer {
+  margin-top: 2rem;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <title>meow!</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-light text-center">
+
+  <div class="container py-5">
+    <h1 class="mb-4">Cats</h1>
+    <p class="lead text-muted">
+      Here you can admire my lovely cat and explore some pawsome reading material.
+    </p>
+
+    <a href="image.png"><img src="image.png" alt="My Cat" class="img-fluid rounded shadow-sm mb-4" style="max-width: 300px;"></a>
+
+    <div class="card mx-auto" style="max-width: 400px;">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Cat Reading Material</h5>
+        <ul class="list-unstyled">
+          <li><a href="Cat.pdf" class="link-primary">Cat Facts (PDF)</a></li>
+          <li><a href="missing_file.pdf" class="link-danger">Broken Link (404 Test)</a></li>
+          <li><a href="subdir/" class="link-success">More Cats (Subdirectory Test)</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="mt-5 text-secondary small">
+      Served by my custom Python HTTP server 🐍
+    </footer>
+  </div>
+</body>
+</html>
