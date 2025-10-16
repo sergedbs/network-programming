@@ -37,6 +37,34 @@ def receive_http_request(client_socket: socket.socket) -> str:
     return request_text
 
 
+def parse_request(request_text: str):
+    method, path, version = "GET", "/", "HTTP/1.1"
+
+    if not request_text:
+        return method, "/index.html", version
+
+    lines = request_text.splitlines()
+    if not lines:
+        return method, "/index.html", version
+
+    parts = lines[0].split()
+    if len(parts) >= 1:
+        method = parts[0]
+    if len(parts) >= 2:
+        raw_target = parts[1]
+        qpos = raw_target.find("?")
+        if qpos != -1:
+            raw_target = raw_target[:qpos]
+        path = raw_target or "/"
+    if len(parts) >= 3:
+        version = parts[2]
+
+    if path == "/":
+        path = "/index.html"
+
+    return method, path, version
+
+
 def start_server():
     print(f"Starting server on {HOST}:{PORT}")
     server = create_socket(HOST, PORT)
@@ -48,6 +76,9 @@ def start_server():
     request = receive_http_request(client_socket)
     print("Received HTTP request:")
     print(request)
+
+    method, path, version = parse_request(request)
+    print(f"Parsed Request - Method: {method}, Path: {path}, Version: {version}")
 
     client_socket.close()
     server.close()
