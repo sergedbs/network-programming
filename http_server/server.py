@@ -20,8 +20,21 @@ def accept_connection(server: socket.socket) -> socket.socket:
 
 
 def receive_http_request(client_socket: socket.socket) -> str:
-    request = client_socket.recv(1024).decode("utf-8")
-    return request
+    HEADER_END = b"\r\n\r\n"
+    data = bytearray()
+
+    while HEADER_END not in data:
+        chunk = client_socket.recv(4096)
+        if not chunk:
+            break
+        data.extend(chunk)
+
+    try:
+        request_text = data.decode("utf-8", errors="replace")
+    except Exception:
+        request_text = ""
+
+    return request_text
 
 
 def start_server():
