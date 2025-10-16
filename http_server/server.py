@@ -13,10 +13,21 @@ def create_socket(host: str, port: int) -> socket.socket:
     return server
 
 
+def accept_connection(server: socket.socket) -> socket.socket:
+    client_socket, client_address = server.accept()
+    client_socket.settimeout(5)
+    return client_socket, client_address
+
+
 def start_server():
-    server = create_socket(HOST, PORT)
     print(f"Starting server on {HOST}:{PORT}")
-    input("")
+    server = create_socket(HOST, PORT)
+
+    print("Waiting for a client connection...")
+    client_socket, client_address = accept_connection(server)
+    print(f"Connection established with {client_address}")
+
+    client_socket.close()
     server.close()
 
 
