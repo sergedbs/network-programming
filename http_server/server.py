@@ -19,6 +19,11 @@ def accept_connection(server: socket.socket) -> socket.socket:
     return client_socket, client_address
 
 
+def receive_http_request(client_socket: socket.socket) -> str:
+    request = client_socket.recv(1024).decode("utf-8")
+    return request
+
+
 def start_server():
     print(f"Starting server on {HOST}:{PORT}")
     server = create_socket(HOST, PORT)
@@ -26,6 +31,10 @@ def start_server():
     print("Waiting for a client connection...")
     client_socket, client_address = accept_connection(server)
     print(f"Connection established with {client_address}")
+
+    request = receive_http_request(client_socket)
+    print("Received HTTP request:")
+    print(request)
 
     client_socket.close()
     server.close()
