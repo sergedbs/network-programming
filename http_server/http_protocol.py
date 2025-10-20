@@ -11,6 +11,48 @@ class HTTPRequest(NamedTuple):
     version: str
 
 
+def normalize_path(raw_path: str) -> str:
+    """Normalize request path: strip query params, ensure leading slash, handle root."""
+    # Remove query parameters
+    path = raw_path.split("?", 1)[0]
+
+    # Ensure leading slash
+    if not path.startswith("/"):
+        path = "/" + path
+
+    # Default root to index.html
+    if path == "/":
+        path = "/index.html"
+
+    return path
+
+
+def validate_http_method(method: str, valid_methods: set[str]) -> None:
+    """Validate HTTP method, raise ValueError if invalid."""
+    if method.upper() not in valid_methods:
+        raise ValueError(f"Unsupported HTTP method: {method}")
+
+
+def validate_http_version(version: str) -> None:
+    """Validate HTTP version format, raise ValueError if invalid."""
+    if not version.startswith("HTTP/"):
+        raise ValueError(f"Invalid HTTP version: {version}")
+
+
+def format_http_headers(headers: dict, defaults: dict) -> dict:
+    """Merge user headers with default headers, user headers take precedence."""
+    result = dict(headers)  # Copy to avoid mutating caller's dict
+    for key, value in defaults.items():
+        result.setdefault(key, value)
+    return result
+
+
+def build_status_line(status_code: int, status_text: dict) -> str:
+    """Generate HTTP/1.1 status line."""
+    reason = status_text.get(status_code, "OK")
+    return f"HTTP/1.1 {status_code} {reason}"
+
+
 class RequestReceiver:
     """Reads request bytes until end-of-headers or size limit, then decodes."""
 
@@ -59,17 +101,12 @@ class RequestParser:
 
         method, raw_path, version = parts
 
-        if method.upper() not in self.VALID_METHODS:
-            raise ValueError(f"Unsupported HTTP method: {method}")
+        # Use extracted validation functions
+        validate_http_method(method, self.VALID_METHODS)
+        validate_http_version(version)
 
-        if not version.startswith("HTTP/"):
-            raise ValueError(f"Invalid HTTP version: {version}")
-
-        path = raw_path.split("?", 1)[0]
-        if not path.startswith("/"):
-            path = "/" + path
-        if path == "/":
-            path = "/index.html"
+        # Use extracted path normalization
+        path = normalize_path(raw_path)
 
         return HTTPRequest(method.upper(), path, version)
 
@@ -86,17 +123,25 @@ class ResponseBuilder:
     def build(
         self, status_code: int, headers: dict, body: bytes | None = None
     ) -> bytes:
-        reason = self.status_text.get(status_code, "OK")
         body = body or b""
-        headers = dict(headers)  # copy to avoid mutating callers
-        headers.setdefault("Content-Length", str(len(body)))
-        headers.setdefault("Connection", "close")
-        headers.setdefault("Server", self.server_name)
 
-        lines = [f"HTTP/1.1 {status_code} {reason}"]
-        for k, v in headers.items():
+        # Merge with default headers
+        defaults = {
+            "Content-Length": str(len(body)),
+            "Connection": "close",
+            "Server": self.server_name,
+        }
+        merged_headers = format_http_headers(headers, defaults)
+
+        # Build status line
+        status_line = build_status_line(status_code, self.status_text)
+
+        # Build header lines
+        lines = [status_line]
+        for k, v in merged_headers.items():
             lines.append(f"{k}: {v}")
         lines.append("")  # end of headers
+
         head = "\r\n".join(lines).encode("utf-8", errors="strict") + b"\r\n"
         return head + body
 

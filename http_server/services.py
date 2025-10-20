@@ -4,6 +4,24 @@ from pathlib import Path
 import mimetypes
 
 
+def is_safe_path(target: Path, base: Path) -> bool:
+    """Check if target path is within base directory (prevents path traversal)."""
+    try:
+        target.relative_to(base)
+        return True
+    except ValueError:
+        return False
+
+
+def format_file_size(size_bytes: int) -> str:
+    """Format bytes as human-readable size (e.g., 1.2 KB, 3.4 MB)."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} PB"
+
+
 class StaticFileService:
     """Resolves safe file paths and determines content types."""
 
@@ -14,16 +32,20 @@ class StaticFileService:
     def resolve(self, request_path: str) -> Path | None:
         relative = request_path.lstrip("/")
         target = (self.base_dir / relative).resolve()
-        try:
-            target.relative_to(self.base_dir)
-        except ValueError:
-            return None  # path traversal attempt
+
+        # Check for path traversal attack
+        if not is_safe_path(target, self.base_dir):
+            return None
+
         if not target.exists():
             return None
+
         if target.is_file():
             return target
+
         if self.allow_directory and target.is_dir():
             return target
+
         return None
 
     def read_bytes(self, path: Path) -> bytes:
