@@ -1,0 +1,14 @@
+services:
+  tcp-http-server:
+    build: .
+    container_name: tcp-http-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./public:/app/public:ro
+      - ./downloads:/app/downloads
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    stop_grace_period: 5s
+    stop_signal: SIGTERM

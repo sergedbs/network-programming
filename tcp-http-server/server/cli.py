@@ -64,8 +64,8 @@ def validate_directory(directory: str) -> Path:
 
         # If not found and using default "public", try relative to script location
         if not base_dir.exists() and directory == "public":
-            script_dir = Path(__file__).parent
-            base_dir = script_dir / base_dir_path
+            project_root = Path(__file__).parent.parent
+            base_dir = project_root / base_dir_path
     else:
         base_dir = base_dir_path
 
