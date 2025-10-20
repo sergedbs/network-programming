@@ -1,8 +1,10 @@
 """HTTP protocol handling - Request parsing and response building."""
 
 import socket
+from pathlib import Path
 from typing import NamedTuple
 from .config import HEADER_END, MAX_HEADER_BYTES, SERVER_NAME, STATUS_TEXT
+from .templates import TemplateService
 
 
 class HTTPRequest(NamedTuple):
@@ -115,10 +117,14 @@ class ResponseBuilder:
     """Builds HTTP responses and common error pages."""
 
     def __init__(
-        self, server_name: str = SERVER_NAME, status_text: dict[int, str] = STATUS_TEXT
+        self,
+        server_name: str = SERVER_NAME,
+        status_text: dict[int, str] = STATUS_TEXT,
+        template_dir: Path | None = None,
     ):
         self.server_name = server_name
         self.status_text = status_text
+        self.template_service = TemplateService(template_dir)
 
     def build(
         self, status_code: int, headers: dict, body: bytes | None = None
@@ -160,12 +166,36 @@ class ResponseBuilder:
             headers.update(extra_headers)
         return self.build(status_code, headers, body)
 
-    def error(self, status_code: int, allow_header: str | None = None) -> bytes:
-        """Generate standard HTML error response for given status code."""
+    def error(
+        self,
+        status_code: int,
+        message: str | None = None,
+        allow_header: str | None = None,
+    ) -> bytes:
+        """Generate standard HTML error response for given status code using templates."""
         reason = self.status_text.get(status_code, "Error")
-        title = f"{status_code} {reason}"
-        body = self.html_error_body(title, title)
+
+        # Use template service to render error page
+        if message is None:
+            message = reason
+
+        html = self.template_service.render_error(
+            status_code=status_code,
+            status_text=reason,
+            message=message,
+            server_name=self.server_name,
+        )
+
         headers = {"Content-Type": "text/html; charset=utf-8"}
         if allow_header:
             headers["Allow"] = allow_header
-        return self.build(status_code, headers, body)
+        return self.build(status_code, headers, html.encode("utf-8"))
+
+    def directory_listing(self, path: str, entries: list[dict]) -> bytes:
+        """Generate directory listing HTML response using templates."""
+        html = self.template_service.render_directory(
+            path=path, entries=entries, server_name=self.server_name
+        )
+
+        headers = {"Content-Type": "text/html; charset=utf-8"}
+        return self.build(200, headers, html.encode("utf-8"))

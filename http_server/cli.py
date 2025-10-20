@@ -45,6 +45,12 @@ Examples:
         help=f"Host/IP to bind to (default: {HOST})",
     )
 
+    parser.add_argument(
+        "--enable-dir-listing",
+        action="store_true",
+        help="Enable directory listing (default: disabled)",
+    )
+
     return parser.parse_args()
 
 
@@ -87,12 +93,15 @@ def validate_directory(directory: str) -> Path:
     return base_dir
 
 
-def print_startup_banner(host: str, port: int, directory: Path) -> None:
+def print_startup_banner(
+    host: str, port: int, directory: Path, dir_listing: bool = False
+) -> None:
     """Print server startup information."""
     print("Starting HTTP server...")
     print(f"  Host: {host}")
     print(f"  Port: {port}")
     print(f"  Directory: {directory}")
+    print(f"  Directory Listing: {'Enabled' if dir_listing else 'Disabled'}")
     print()
 
 
@@ -100,11 +109,14 @@ def main():
     """Main entry point for the HTTP server."""
     args = parse_arguments()
     base_dir = validate_directory(args.directory)
-    print_startup_banner(args.host, args.port, base_dir)
+    print_startup_banner(args.host, args.port, base_dir, args.enable_dir_listing)
 
     try:
         server = SimpleHTTPServer(
-            host=args.host, port=args.port, base_dir=str(base_dir)
+            host=args.host,
+            port=args.port,
+            base_dir=str(base_dir),
+            allow_directory_listing=args.enable_dir_listing,
         )
         server.serve_forever()
     except OSError as e:

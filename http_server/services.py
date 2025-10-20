@@ -54,3 +54,108 @@ class StaticFileService:
     def content_type(self, path: Path) -> str:
         mimetype, _ = mimetypes.guess_type(str(path))
         return mimetype or "application/octet-stream"
+
+    def list_directory(self, directory: Path) -> list[dict]:
+        """
+        List directory contents with metadata.
+
+        Args:
+            directory: Directory path to list
+
+        Returns:
+            List of dictionaries with entry metadata:
+            [
+                {
+                    "name": "file.txt",
+                    "type": "file" or "directory",
+                    "size": 1024,  # bytes, None for directories
+                    "size_formatted": "1.0 KB",
+                    "modified": "2025-10-20 12:30:45",
+                    "path": "/subdir/file.txt"
+                },
+                ...
+            ]
+        """
+        if not directory.is_dir():
+            return []
+
+        entries = []
+
+        # Add parent directory link if not at root
+        try:
+            relative = directory.relative_to(self.base_dir)
+            if str(relative) != ".":
+                parent_path = "/" + str(relative.parent).replace("\\", "/")
+                if parent_path.endswith("/."):
+                    parent_path = "/"
+                entries.append(
+                    {
+                        "name": "..",
+                        "type": "directory",
+                        "size": None,
+                        "size_formatted": "-",
+                        "modified": "-",
+                        "path": parent_path,
+                    }
+                )
+        except ValueError:
+            pass
+
+        # List all entries in directory
+        try:
+            items = sorted(
+                directory.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())
+            )
+        except PermissionError:
+            return entries
+
+        for item in items:
+            # Skip hidden files (starting with .)
+            if item.name.startswith("."):
+                continue
+
+            # Calculate relative path for URL
+            try:
+                rel_path = item.relative_to(self.base_dir)
+                url_path = "/" + str(rel_path).replace("\\", "/")
+                if item.is_dir():
+                    url_path += "/"
+            except ValueError:
+                continue
+
+            # Get file metadata
+            try:
+                stat = item.stat()
+                modified = self._format_timestamp(stat.st_mtime)
+
+                if item.is_file():
+                    size = stat.st_size
+                    size_formatted = format_file_size(size)
+                    entry_type = "file"
+                else:
+                    size = None
+                    size_formatted = "-"
+                    entry_type = "directory"
+
+                entries.append(
+                    {
+                        "name": item.name,
+                        "type": entry_type,
+                        "size": size,
+                        "size_formatted": size_formatted,
+                        "modified": modified,
+                        "path": url_path,
+                    }
+                )
+            except (OSError, PermissionError):
+                # Skip files we can't read
+                continue
+
+        return entries
+
+    def _format_timestamp(self, timestamp: float) -> str:
+        """Format Unix timestamp as human-readable string."""
+        from datetime import datetime
+
+        dt = datetime.fromtimestamp(timestamp)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")

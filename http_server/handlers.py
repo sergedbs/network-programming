@@ -36,22 +36,50 @@ class ClientHandler:
                 return
 
             target = self.files.resolve(req.path)
-            if not target or not target.is_file():
+            if not target:
                 self.logger.warning(f"404 Not Found: {req.path}")
                 client_socket.sendall(self.responses.error(404))
                 return
 
-            data = self.files.read_bytes(target)
-            content_type = self.files.content_type(target)
+            # Handle directory listing
+            if target.is_dir():
+                if not self.files.allow_directory:
+                    self.logger.warning(
+                        f"403 Forbidden: Directory listing disabled for {req.path}"
+                    )
+                    client_socket.sendall(
+                        self.responses.error(403, "Directory listing is disabled")
+                    )
+                    return
 
-            headers = {
-                "Content-Type": content_type,
-                "Content-Length": str(len(data)),
-                "Connection": "close",
-            }
-            body = b"" if req.method == "HEAD" else data
-            client_socket.sendall(self.responses.build(200, headers, body))
-            self.logger.info(f"200 OK: {req.path} ({len(data)} bytes)")
+                # Generate directory listing
+                entries = self.files.list_directory(target)
+                response = self.responses.directory_listing(req.path, entries)
+                client_socket.sendall(response)
+                self.logger.info(
+                    f"200 OK: {req.path} (directory listing, {len(entries)} entries)"
+                )
+                return
+
+            # Handle file serving
+            if target.is_file():
+                data = self.files.read_bytes(target)
+                content_type = self.files.content_type(target)
+
+                headers = {
+                    "Content-Type": content_type,
+                    "Content-Length": str(len(data)),
+                    "Connection": "close",
+                }
+                body = b"" if req.method == "HEAD" else data
+                client_socket.sendall(self.responses.build(200, headers, body))
+                self.logger.info(f"200 OK: {req.path} ({len(data)} bytes)")
+                return
+
+            # Not a file or directory
+            self.logger.warning(f"404 Not Found: {req.path}")
+            client_socket.sendall(self.responses.error(404))
+            return
 
         except ValueError as e:
             self.logger.error(f"400 Bad Request: {e}")

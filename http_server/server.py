@@ -18,7 +18,13 @@ logging.basicConfig(
 class SimpleHTTPServer:
     """Composed, extensible HTTP server."""
 
-    def __init__(self, host: str = HOST, port: int = PORT, base_dir: str = "public"):
+    def __init__(
+        self,
+        host: str = HOST,
+        port: int = PORT,
+        base_dir: str = "public",
+        allow_directory_listing: bool = False,
+    ):
         self.host = host
         self.port = port
         self.listener = SocketListener(host, port)
@@ -27,7 +33,9 @@ class SimpleHTTPServer:
 
         receiver = RequestReceiver()
         parser = RequestParser()
-        files = StaticFileService(base_dir=base_dir, allow_directory=False)
+        files = StaticFileService(
+            base_dir=base_dir, allow_directory=allow_directory_listing
+        )
         responses = ResponseBuilder()
         self.handler = ClientHandler(receiver, parser, files, responses, self.logger)
 
