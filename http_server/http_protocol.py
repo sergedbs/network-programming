@@ -166,6 +166,15 @@ class ResponseBuilder:
             headers.update(extra_headers)
         return self.build(status_code, headers, body)
 
+    def _render_html_response(
+        self, status_code: int, html: str, extra_headers: dict | None = None
+    ) -> bytes:
+        """Helper to build HTML response from template string."""
+        headers = {"Content-Type": "text/html; charset=utf-8"}
+        if extra_headers:
+            headers.update(extra_headers)
+        return self.build(status_code, headers, html.encode("utf-8"))
+
     def error(
         self,
         status_code: int,
@@ -175,21 +184,15 @@ class ResponseBuilder:
         """Generate standard HTML error response for given status code using templates."""
         reason = self.status_text.get(status_code, "Error")
 
-        # Use template service to render error page
-        if message is None:
-            message = reason
-
         html = self.template_service.render_error(
             status_code=status_code,
-            status_text=reason,
-            message=message,
+            status_text=reason if message is None else message,
+            message=reason if message is None else message,
             server_name=self.server_name,
         )
 
-        headers = {"Content-Type": "text/html; charset=utf-8"}
-        if allow_header:
-            headers["Allow"] = allow_header
-        return self.build(status_code, headers, html.encode("utf-8"))
+        extra_headers = {"Allow": allow_header} if allow_header else None
+        return self._render_html_response(status_code, html, extra_headers)
 
     def directory_listing(self, path: str, entries: list[dict]) -> bytes:
         """Generate directory listing HTML response using templates."""
@@ -197,5 +200,4 @@ class ResponseBuilder:
             path=path, entries=entries, server_name=self.server_name
         )
 
-        headers = {"Content-Type": "text/html; charset=utf-8"}
-        return self.build(200, headers, html.encode("utf-8"))
+        return self._render_html_response(200, html)

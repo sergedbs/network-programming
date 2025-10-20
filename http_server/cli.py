@@ -36,7 +36,7 @@ Examples:
         "--port",
         type=int,
         default=PORT,
-        help=f"Port to listen on (default: {PORT})",
+        help=f"Port to listen on (default: {PORT}, range: 1-65535)",
     )
 
     parser.add_argument(
@@ -80,7 +80,6 @@ def validate_directory(directory: str) -> Path:
         print(f"Error: '{directory}' is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    # Check if directory is readable
     try:
         list(base_dir.iterdir())
     except PermissionError:
@@ -91,6 +90,13 @@ def validate_directory(directory: str) -> Path:
         sys.exit(1)
 
     return base_dir
+
+
+def validate_port(port: int) -> None:
+    """Validate that port is in valid range."""
+    if not (1 <= port <= 65535):
+        print(f"Error: Port must be between 1 and 65535, got {port}", file=sys.stderr)
+        sys.exit(1)
 
 
 def print_startup_banner(
@@ -108,6 +114,7 @@ def print_startup_banner(
 def main():
     """Main entry point for the HTTP server."""
     args = parse_arguments()
+    validate_port(args.port)
     base_dir = validate_directory(args.directory)
     print_startup_banner(args.host, args.port, base_dir, args.enable_dir_listing)
 

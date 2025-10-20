@@ -1,7 +1,19 @@
 """File serving services - Static file resolution and content type detection."""
 
 from pathlib import Path
+from typing import TypedDict
 import mimetypes
+
+
+class DirectoryEntry(TypedDict):
+    """Structure for directory listing entries."""
+
+    name: str
+    type: str
+    size: int | None
+    size_formatted: str
+    modified: str
+    path: str
 
 
 def is_safe_path(target: Path, base: Path) -> bool:
@@ -33,7 +45,6 @@ class StaticFileService:
         relative = request_path.lstrip("/")
         target = (self.base_dir / relative).resolve()
 
-        # Check for path traversal attack
         if not is_safe_path(target, self.base_dir):
             return None
 
@@ -55,33 +66,18 @@ class StaticFileService:
         mimetype, _ = mimetypes.guess_type(str(path))
         return mimetype or "application/octet-stream"
 
-    def list_directory(self, directory: Path) -> list[dict]:
+    def list_directory(self, directory: Path) -> list[DirectoryEntry]:
         """
-        List directory contents with metadata.
+        List directory contents with metadata for rendering.
 
-        Args:
-            directory: Directory path to list
-
-        Returns:
-            List of dictionaries with entry metadata:
-            [
-                {
-                    "name": "file.txt",
-                    "type": "file" or "directory",
-                    "size": 1024,  # bytes, None for directories
-                    "size_formatted": "1.0 KB",
-                    "modified": "2025-10-20 12:30:45",
-                    "path": "/subdir/file.txt"
-                },
-                ...
-            ]
+        Sorts directories before files, adds parent link if not at root,
+        skips hidden files, and formats sizes as human-readable strings.
         """
         if not directory.is_dir():
             return []
 
-        entries = []
+        entries: list[DirectoryEntry] = []
 
-        # Add parent directory link if not at root
         try:
             relative = directory.relative_to(self.base_dir)
             if str(relative) != ".":
@@ -89,14 +85,14 @@ class StaticFileService:
                 if parent_path.endswith("/."):
                     parent_path = "/"
                 entries.append(
-                    {
-                        "name": "..",
-                        "type": "directory",
-                        "size": None,
-                        "size_formatted": "-",
-                        "modified": "-",
-                        "path": parent_path,
-                    }
+                    DirectoryEntry(
+                        name="..",
+                        type="directory",
+                        size=None,
+                        size_formatted="-",
+                        modified="-",
+                        path=parent_path,
+                    )
                 )
         except ValueError:
             pass
@@ -123,7 +119,6 @@ class StaticFileService:
             except ValueError:
                 continue
 
-            # Get file metadata
             try:
                 stat = item.stat()
                 modified = self._format_timestamp(stat.st_mtime)
@@ -138,14 +133,14 @@ class StaticFileService:
                     entry_type = "directory"
 
                 entries.append(
-                    {
-                        "name": item.name,
-                        "type": entry_type,
-                        "size": size,
-                        "size_formatted": size_formatted,
-                        "modified": modified,
-                        "path": url_path,
-                    }
+                    DirectoryEntry(
+                        name=item.name,
+                        type=entry_type,
+                        size=size,
+                        size_formatted=size_formatted,
+                        modified=modified,
+                        path=url_path,
+                    )
                 )
             except (OSError, PermissionError):
                 # Skip files we can't read

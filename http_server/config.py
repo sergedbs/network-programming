@@ -3,6 +3,8 @@
 HOST = "0.0.0.0"
 PORT = 8080
 
+SUPPORTED_METHODS = {"GET", "HEAD"}
+
 STATUS_TEXT = {
     200: "OK",
     400: "Bad Request",
