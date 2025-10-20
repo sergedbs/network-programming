@@ -5,6 +5,15 @@ import mimetypes
 HOST = "0.0.0.0"
 PORT = 8080
 
+STATUS_TEXT = {
+    200: "OK",
+    400: "Bad Request",
+    403: "Forbidden",
+    404: "Not Found",
+    405: "Method Not Allowed",
+    500: "Internal Server Error",
+}
+
 
 def create_socket(host: str, port: int) -> socket.socket:
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -15,7 +24,7 @@ def create_socket(host: str, port: int) -> socket.socket:
     return server
 
 
-def accept_connection(server: socket.socket) -> socket.socket:
+def accept_connection(server: socket.socket) -> tuple[socket.socket, tuple[str, int]]:
     client_socket, client_address = server.accept()
     client_socket.settimeout(5)
     return client_socket, client_address
@@ -23,13 +32,19 @@ def accept_connection(server: socket.socket) -> socket.socket:
 
 def receive_http_request(client_socket: socket.socket) -> str:
     HEADER_END = b"\r\n\r\n"
+    MAX_HEADER_BYTES = 64 * 1024
     data = bytearray()
 
-    while HEADER_END not in data:
-        chunk = client_socket.recv(4096)
-        if not chunk:
-            break
-        data.extend(chunk)
+    try:
+        while HEADER_END not in data:
+            chunk = client_socket.recv(4096)
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > MAX_HEADER_BYTES:
+                raise ValueError("Request headers too large")
+    except socket.timeout:
+        raise ValueError("Request timed out")
 
     try:
         request_text = data.decode("utf-8", errors="replace")
@@ -117,47 +132,161 @@ def determine_content_type(file_path: str | Path) -> str:
     return mimetype
 
 
+def build_http_response(status_code: int, headers: dict, body: bytes) -> bytes:
+    reason = STATUS_TEXT.get(status_code, "OK")
+
+    if body is None:
+        body = b""
+    if "Content-Length" not in headers:
+        headers["Content-Length"] = str(len(body))
+    if "Connection" not in headers:
+        headers["Connection"] = "close"
+    if "Server" not in headers:
+        headers["Server"] = "SimplePythonSocketHTTP/1.0"
+
+    lines = [f"HTTP/1.1 {status_code} {reason}"]
+    for k, v in headers.items():
+        lines.append(f"{k}: {v}")
+    lines.append("")
+
+    head = "\r\n".join(lines).encode("utf-8", errors="strict") + b"\r\n"
+    return head + body
+
+
+def generate_404_response() -> bytes:
+    body = (
+        b"<html><head><title>404 Not Found</title></head>"
+        b"<body><h1>404 Not Found</h1></body></html>"
+    )
+
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return build_http_response(404, headers, body)
+
+
+def generate_403_response() -> bytes:
+    body = (
+        b"<html><head><title>403 Forbidden</title></head>"
+        b"<body><h1>403 Forbidden</h1></body></html>"
+    )
+
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return build_http_response(403, headers, body)
+
+
+def generate_500_response() -> bytes:
+    body = (
+        b"<html><head><title>500 Internal Server Error</title></head>"
+        b"<body><h1>500 Internal Server Error</h1></body></html>"
+    )
+
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return build_http_response(500, headers, body)
+
+
+def generate_405_response() -> bytes:
+    body = (
+        b"<html><head><title>405 Method Not Allowed</title></head>"
+        b"<body><h1>405 Method Not Allowed</h1>"
+        b"<p>Only GET and HEAD are supported.</p></body></html>"
+    )
+
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+        "Allow": "GET, HEAD",
+    }
+    return build_http_response(405, headers, body)
+
+
+def generate_400_response() -> bytes:
+    body = (
+        b"<html><head><title>400 Bad Request</title></head>"
+        b"<body><h1>400 Bad Request</h1></body></html>"
+    )
+
+    headers = {
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    return build_http_response(400, headers, body)
+
+
+def handle_client(client_socket, base_dir: str = "public") -> None:
+    try:
+        request_text = receive_http_request(client_socket)
+        method, path, version = parse_request(request_text)
+
+        if method not in {"GET", "HEAD"}:
+            response = generate_405_response()
+            client_socket.sendall(response)
+            return
+
+        target = get_file_path(path, base_dir=base_dir, allow_directory=False)
+        if not target or not Path(target).is_file():
+            response = generate_404_response()
+            client_socket.sendall(response)
+            return
+
+        data = Path(target).read_bytes()
+        mime = determine_content_type(target)
+
+        headers = {
+            "Content-Type": f"{mime}",
+            "Content-Length": str(len(data)),
+            "Connection": "close",
+        }
+
+        # 7) For HEAD: send headers only (no body)
+        body = b"" if method == "HEAD" else data
+        response = build_http_response(200, headers, body)
+        client_socket.sendall(response)
+
+    except ValueError as ve:
+        body = (
+            b"<html><head><title>400 Bad Request</title></head>"
+            b"<body><h1>400 Bad Request</h1></body></html>"
+        )
+        headers = {
+            "Content-Type": "text/html; charset=utf-8",
+            "Connection": "close",
+        }
+        response = build_http_response(400, headers, body)
+        try:
+            client_socket.sendall(response)
+        except Exception:
+            pass  # client may have already gone away
+
+    except Exception as e:
+        body = (
+            b"<html><head><title>500 Internal Server Error</title></head>"
+            b"<body><h1>500 Internal Server Error</h1></body></html>"
+        )
+        headers = {
+            "Content-Type": "text/html; charset=utf-8",
+            "Connection": "close",
+        }
+        response = build_http_response(500, headers, body)
+        try:
+            client_socket.sendall(response)
+        except Exception:
+            pass
+
+    finally:
+        try:
+            client_socket.close()
+        except Exception:
+            pass
+
+
 def start_server():
-    print(f"Starting server on {HOST}:{PORT}")
     server = create_socket(HOST, PORT)
-
-    print("Waiting for a client connection...")
-    client_socket, client_address = accept_connection(server)
-    print(f"Connection established with {client_address}")
-
-    request = receive_http_request(client_socket)
-    print("Received HTTP request:")
-    print(request)
-
-    method, path, version = parse_request(request)
-    print(f"Parsed Request - Method: {method}, Path: {path}, Version: {version}")
-
-    file_path = get_file_path(path)
-    print(f"Resolved file path: {file_path}")
-    if file_path:
-        content_type = determine_content_type(file_path)
-        response_body = file_path.read_bytes()
-        response_headers = (
-            f"{version} 200 OK\r\n"
-            f"Content-Type: {content_type}\r\n"
-            f"Content-Length: {len(response_body)}\r\n"
-            f"\r\n"
-        )
-    else:
-        response_body = b"404 Not Found"
-        response_headers = (
-            f"{version} 404 Not Found\r\n"
-            f"Content-Type: text/plain\r\n"
-            f"Content-Length: {len(response_body)}\r\n"
-            f"\r\n"
-        )
-
-    response = response_headers.encode("utf-8") + response_body
-    client_socket.sendall(response)
-    print("Response sent to client.")
-
-    client_socket.close()
-    server.close()
+    while True:
+        client_socket, addr = accept_connection(server)
+        handle_client(client_socket, base_dir="public")
 
 
 def main():
