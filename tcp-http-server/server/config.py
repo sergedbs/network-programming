@@ -5,15 +5,16 @@ import logging
 HOST = "0.0.0.0"
 PORT = 8080
 
+ENABLE_DIR_LISTING = True
+
 SUPPORTED_METHODS = {"GET", "HEAD"}
 
-# Logging configuration
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warning": logging.WARNING,
     "error": logging.ERROR,
-    "none": logging.CRITICAL + 1,  # Disable all logging
+    "none": logging.CRITICAL + 1,
 }
 DEFAULT_LOG_LEVEL = "info"
 

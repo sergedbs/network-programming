@@ -4,7 +4,7 @@ import sys
 import argparse
 import logging
 from pathlib import Path
-from .config import HOST, PORT, LOG_LEVELS, DEFAULT_LOG_LEVEL
+from .config import HOST, PORT, LOG_LEVELS, DEFAULT_LOG_LEVEL, ENABLE_DIR_LISTING
 from .server import SimpleHTTPServer
 
 
@@ -128,7 +128,7 @@ def print_startup_banner(
     host: str,
     port: int,
     directory: Path,
-    dir_listing: bool = False,
+    dir_listing: bool = ENABLE_DIR_LISTING,
     log_level: str = DEFAULT_LOG_LEVEL,
 ) -> None:
     """Print server startup information."""
