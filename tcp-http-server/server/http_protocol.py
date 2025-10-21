@@ -15,14 +15,11 @@ class HTTPRequest(NamedTuple):
 
 def normalize_path(raw_path: str) -> str:
     """Normalize request path: strip query params, ensure leading slash, handle root."""
-    # Remove query parameters
     path = raw_path.split("?", 1)[0]
 
-    # Ensure leading slash
     if not path.startswith("/"):
         path = "/" + path
 
-    # Default root to index.html
     if path == "/":
         path = "/index.html"
 
@@ -43,7 +40,7 @@ def validate_http_version(version: str) -> None:
 
 def format_http_headers(headers: dict, defaults: dict) -> dict:
     """Merge user headers with default headers, user headers take precedence."""
-    result = dict(headers)  # Copy to avoid mutating caller's dict
+    result = dict(headers)
     for key, value in defaults.items():
         result.setdefault(key, value)
     return result
@@ -103,11 +100,9 @@ class RequestParser:
 
         method, raw_path, version = parts
 
-        # Use extracted validation functions
         validate_http_method(method, self.VALID_METHODS)
         validate_http_version(version)
 
-        # Use extracted path normalization
         path = normalize_path(raw_path)
 
         return HTTPRequest(method.upper(), path, version)
@@ -131,7 +126,6 @@ class ResponseBuilder:
     ) -> bytes:
         body = body or b""
 
-        # Merge with default headers
         defaults = {
             "Content-Length": str(len(body)),
             "Connection": "close",
@@ -139,14 +133,12 @@ class ResponseBuilder:
         }
         merged_headers = format_http_headers(headers, defaults)
 
-        # Build status line
         status_line = build_status_line(status_code, self.status_text)
 
-        # Build header lines
         lines = [status_line]
         for k, v in merged_headers.items():
             lines.append(f"{k}: {v}")
-        lines.append("")  # end of headers
+        lines.append("")
 
         head = "\r\n".join(lines).encode("utf-8", errors="strict") + b"\r\n"
         return head + body

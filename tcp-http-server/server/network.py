@@ -25,8 +25,6 @@ class SocketListener:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((self.host, self.port))
         server.listen(self.backlog)
-        # Set a timeout so accept() doesn't block indefinitely
-        # This allows signal handlers to be processed
         server.settimeout(1.0)
         self._server = server
 

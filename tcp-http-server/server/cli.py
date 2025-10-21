@@ -11,6 +11,7 @@ from .server import SimpleHTTPServer
 def parse_arguments() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
+        prog="server",
         description="Simple HTTP Server - Serve static files over HTTP",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -47,9 +48,11 @@ Examples:
     )
 
     parser.add_argument(
-        "--enable-dir-listing",
-        action="store_true",
-        help="Enable directory listing (default: disabled)",
+        "--dir-listing",
+        type=parse_dir_listing,
+        default=ENABLE_DIR_LISTING,
+        metavar="enabled|disabled",
+        help=f"Enable/disable directory listing (default: {'enabled' if ENABLE_DIR_LISTING else 'disabled'})",
     )
 
     parser.add_argument(
@@ -57,7 +60,7 @@ Examples:
         choices=list(LOG_LEVELS.keys()),
         default=DEFAULT_LOG_LEVEL,
         help=f"Logging level (default: {DEFAULT_LOG_LEVEL}). "
-        "Levels: debug (all), info (info+warning+error), warning (warning+error), error (error only), none (no logs)",
+        "Levels: debug (all), info, warning, error, none (no logs)",
     )
 
     return parser.parse_args()
@@ -68,10 +71,8 @@ def validate_directory(directory: str) -> Path:
     base_dir_path = Path(directory)
 
     if not base_dir_path.is_absolute():
-        # For relative paths, first try relative to current directory
         base_dir = Path.cwd() / base_dir_path
 
-        # If not found and using default "public", try relative to script location
         if not base_dir.exists() and directory == "public":
             project_root = Path(__file__).parent.parent
             base_dir = project_root / base_dir_path
@@ -113,14 +114,26 @@ def configure_logging(log_level: str) -> None:
     level = LOG_LEVELS.get(log_level, logging.INFO)
 
     if level > logging.CRITICAL:
-        # Disable all logging
         logging.disable(logging.CRITICAL)
     else:
         logging.basicConfig(
             level=level,
             format="%(asctime)s [%(levelname)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
-            force=True,  # Reconfigure if already configured
+            force=True,
+        )
+
+
+def parse_dir_listing(value: str) -> bool:
+    """Parse directory listing argument."""
+    value_lower = value.lower()
+    if value_lower in ("enabled", "enable", "true", "1", "yes", "on"):
+        return True
+    elif value_lower in ("disabled", "disable", "false", "0", "no", "off"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError(
+            f"Invalid value '{value}'. Use: enabled/disabled"
         )
 
 
@@ -147,11 +160,10 @@ def main():
     validate_port(args.port)
     base_dir = validate_directory(args.directory)
 
-    # Configure logging before starting the server
     configure_logging(args.log_level)
 
     print_startup_banner(
-        args.host, args.port, base_dir, args.enable_dir_listing, args.log_level
+        args.host, args.port, base_dir, args.dir_listing, args.log_level
     )
 
     try:
@@ -159,7 +171,7 @@ def main():
             host=args.host,
             port=args.port,
             base_dir=str(base_dir),
-            allow_directory_listing=args.enable_dir_listing,
+            allow_directory_listing=args.dir_listing,
         )
         server.serve_forever()
     except OSError as e:

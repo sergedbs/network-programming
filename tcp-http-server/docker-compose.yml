@@ -1,7 +1,6 @@
 services:
   tcp-http-server:
     build: .
-    container_name: tcp-http-server
     ports:
       - "8080:8080"
     volumes:

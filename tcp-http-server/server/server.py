@@ -33,7 +33,6 @@ class SimpleHTTPServer:
             base_dir=base_dir, allow_directory=allow_directory_listing
         )
 
-        # Set up template directory (relative to this file)
         template_dir = Path(__file__).parent / "templates"
         responses = ResponseBuilder(template_dir=template_dir)
 
@@ -47,7 +46,6 @@ class SimpleHTTPServer:
     def serve_forever(self) -> None:
         """Start the server and handle requests until shutdown is requested."""
 
-        # Register signal handlers for graceful shutdown
         def signal_handler(signum: int, frame) -> None:
             self.shutdown()
 
@@ -67,15 +65,12 @@ class SimpleHTTPServer:
                     )
                     self.handler.handle(client_socket, client_addr)
                 except socket.timeout:
-                    # Accept timed out, check shutdown flag and continue
                     continue
                 except OSError:
-                    # Socket was closed during shutdown
                     if self._shutdown_requested:
                         break
                     raise
         except KeyboardInterrupt:
-            # Handle Ctrl+C gracefully (backup in case signal handler doesn't catch it)
             self.logger.info("Keyboard interrupt received")
             self._shutdown_requested = True
         except Exception as e:

@@ -97,7 +97,6 @@ class StaticFileService:
         except ValueError:
             pass
 
-        # List all entries in directory
         try:
             items = sorted(
                 directory.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())
@@ -106,11 +105,9 @@ class StaticFileService:
             return entries
 
         for item in items:
-            # Skip hidden files (starting with .)
             if item.name.startswith("."):
                 continue
 
-            # Calculate relative path for URL
             try:
                 rel_path = item.relative_to(self.base_dir)
                 url_path = "/" + str(rel_path).replace("\\", "/")
@@ -143,7 +140,6 @@ class StaticFileService:
                     )
                 )
             except (OSError, PermissionError):
-                # Skip files we can't read
                 continue
 
         return entries
