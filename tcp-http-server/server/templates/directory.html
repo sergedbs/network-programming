@@ -5,71 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Index of {path}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f5f7fa;
             padding: 20px;
             line-height: 1.6;
-        }
-        .container {
+        }}
+        .container {{
             max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             overflow: hidden;
-            animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        header {
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(-10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        header {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px 30px;
-        }
-        h1 {
+        }}
+        h1 {{
             font-size: 28px;
             margin-bottom: 12px;
             font-weight: 600;
-        }
-        .breadcrumbs {
+        }}
+        .breadcrumbs {{
             font-size: 16px;
             opacity: 0.95;
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-        }
-        .breadcrumbs a {
+        }}
+        .breadcrumbs a {{
             color: white;
             text-decoration: none;
             padding: 6px 10px;
             border-radius: 6px;
             transition: background 0.2s;
             display: inline-block;
-        }
-        .breadcrumbs a:hover {
+        }}
+        .breadcrumbs a:hover {{
             background: rgba(255,255,255,0.2);
-        }
-        .info {
+        }}
+        .info {{
             padding: 20px 30px;
             background: #f8f9fa;
             border-bottom: 1px solid #e9ecef;
             font-size: 14px;
             color: #6c757d;
             font-weight: 500;
-        }
-        table {
+        }}
+        table {{
             width: 100%;
             border-collapse: collapse;
-        }
-        thead {
+        }}
+        thead {{
             background: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
-        }
-        th {
+        }}
+        th {{
             padding: 16px 30px;
             text-align: left;
             font-weight: 600;
@@ -77,73 +76,73 @@
             font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        td {
+        }}
+        td {{
             padding: 16px 30px;
             border-bottom: 1px solid #f0f0f0;
             font-size: 15px;
-        }
-        tbody tr {
+        }}
+        tbody tr {{
             transition: background 0.2s;
-        }
-        tbody tr:hover {
+        }}
+        tbody tr:hover {{
             background: #f8f9fa;
-        }
-        .directory {
+        }}
+        .directory {{
             background: #fafbfc;
-        }
-        .directory:hover {
+        }}
+        .directory:hover {{
             background: #f1f3f5 !important;
-        }
-        .icon {
+        }}
+        .icon {{
             width: 50px;
             font-size: 22px;
             text-align: center;
-        }
-        .name {
+        }}
+        .name {{
             font-weight: 500;
-        }
-        .name a {
+        }}
+        .name a {{
             color: #667eea;
             text-decoration: none;
             transition: color 0.2s;
-        }
-        .name a:hover {
+        }}
+        .name a:hover {{
             color: #764ba2;
             text-decoration: underline;
-        }
-        .size {
+        }}
+        .size {{
             color: #6c757d;
             width: 120px;
             font-size: 14px;
-        }
-        .modified {
+        }}
+        .modified {{
             color: #adb5bd;
             width: 220px;
             font-size: 14px;
-        }
-        .empty {
+        }}
+        .empty {{
             text-align: center;
             color: #adb5bd;
             padding: 80px 30px;
             font-style: italic;
             font-size: 16px;
-        }
-        footer {
+        }}
+        footer {{
             padding: 20px 30px;
             text-align: center;
             color: #adb5bd;
             font-size: 13px;
             border-top: 1px solid #e9ecef;
             background: #f8f9fa;
-        }
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            header { padding: 30px 20px; }
-            h1 { font-size: 24px; }
-            th, td { padding: 12px 20px; }
-            .size, .modified { display: none; }
-        }
+        }}
+        @media (max-width: 768px) {{
+            body {{ padding: 10px; }}
+            header {{ padding: 30px 20px; }}
+            h1 {{ font-size: 24px; }}
+            th, td {{ padding: 12px 20px; }}
+            .size, .modified {{ display: none; }}
+        }}
     </style>
 </head>
 <body>

@@ -2,8 +2,9 @@
 
 import sys
 import argparse
+import logging
 from pathlib import Path
-from .config import HOST, PORT
+from .config import HOST, PORT, LOG_LEVELS, DEFAULT_LOG_LEVEL
 from .server import SimpleHTTPServer
 
 
@@ -49,6 +50,14 @@ Examples:
         "--enable-dir-listing",
         action="store_true",
         help="Enable directory listing (default: disabled)",
+    )
+
+    parser.add_argument(
+        "--log-level",
+        choices=list(LOG_LEVELS.keys()),
+        default=DEFAULT_LOG_LEVEL,
+        help=f"Logging level (default: {DEFAULT_LOG_LEVEL}). "
+        "Levels: debug (all), info (info+warning+error), warning (warning+error), error (error only), none (no logs)",
     )
 
     return parser.parse_args()
@@ -99,8 +108,28 @@ def validate_port(port: int) -> None:
         sys.exit(1)
 
 
+def configure_logging(log_level: str) -> None:
+    """Configure logging based on the specified level."""
+    level = LOG_LEVELS.get(log_level, logging.INFO)
+
+    if level > logging.CRITICAL:
+        # Disable all logging
+        logging.disable(logging.CRITICAL)
+    else:
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+            force=True,  # Reconfigure if already configured
+        )
+
+
 def print_startup_banner(
-    host: str, port: int, directory: Path, dir_listing: bool = False
+    host: str,
+    port: int,
+    directory: Path,
+    dir_listing: bool = False,
+    log_level: str = DEFAULT_LOG_LEVEL,
 ) -> None:
     """Print server startup information."""
     print("Starting HTTP server...")
@@ -108,6 +137,7 @@ def print_startup_banner(
     print(f"  Port: {port}")
     print(f"  Directory: {directory}")
     print(f"  Directory Listing: {'Enabled' if dir_listing else 'Disabled'}")
+    print(f"  Log Level: {log_level}")
     print()
 
 
@@ -116,7 +146,13 @@ def main():
     args = parse_arguments()
     validate_port(args.port)
     base_dir = validate_directory(args.directory)
-    print_startup_banner(args.host, args.port, base_dir, args.enable_dir_listing)
+
+    # Configure logging before starting the server
+    configure_logging(args.log_level)
+
+    print_startup_banner(
+        args.host, args.port, base_dir, args.enable_dir_listing, args.log_level
+    )
 
     try:
         server = SimpleHTTPServer(

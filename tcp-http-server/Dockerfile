@@ -15,4 +15,4 @@ RUN mkdir -p /app/downloads
 EXPOSE 8080
 
 # Run server
-CMD ["python3", "-m", "server.cli", "--host", "0.0.0.0", "--port", "8080", "--dir", "public", "--enable-dir-listing"]
+CMD ["python3", "-m", "server.cli", "--enable-dir-listing"]

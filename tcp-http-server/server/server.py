@@ -3,16 +3,12 @@
 import socket
 import signal
 import logging
+from pathlib import Path
 from .config import HOST, PORT
 from .network import SocketListener
 from .http_protocol import RequestReceiver, RequestParser, ResponseBuilder
 from .services import StaticFileService
 from .handlers import ClientHandler
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class SimpleHTTPServer:
@@ -36,7 +32,11 @@ class SimpleHTTPServer:
         files = StaticFileService(
             base_dir=base_dir, allow_directory=allow_directory_listing
         )
-        responses = ResponseBuilder()
+
+        # Set up template directory (relative to this file)
+        template_dir = Path(__file__).parent / "templates"
+        responses = ResponseBuilder(template_dir=template_dir)
+
         self.handler = ClientHandler(receiver, parser, files, responses, self.logger)
 
     def shutdown(self) -> None:
@@ -62,8 +62,10 @@ class SimpleHTTPServer:
             while not self._shutdown_requested:
                 try:
                     client_socket, client_addr = self.listener.accept()
-                    self.logger.debug(f"Connection from {client_addr}")
-                    self.handler.handle(client_socket)
+                    self.logger.info(
+                        f"Connection from {client_addr[0]}:{client_addr[1]}"
+                    )
+                    self.handler.handle(client_socket, client_addr)
                 except socket.timeout:
                     # Accept timed out, check shutdown flag and continue
                     continue

@@ -9,6 +9,6 @@ services:
       - ./downloads:/app/downloads
     environment:
       - PYTHONUNBUFFERED=1
-    restart: unless-stopped
-    stop_grace_period: 5s
+    restart: on-failure:3
+    stop_grace_period: 2s
     stop_signal: SIGTERM
