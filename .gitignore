@@ -74,7 +74,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-downloads/
+**/downloads/**
+!**/downloads/**/.gitkeep
 eggs/
 .eggs/
 lib/
@@ -131,6 +132,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*.bak
 .spyderproject
 .spyproject
 .ropeproject
