@@ -50,6 +50,35 @@ class ClientHandler:
                 return
 
             if target.is_dir():
+                if not req.path.endswith("/") and req.path != "/":
+                    redirect_path = req.path + "/"
+                    headers = {
+                        "Location": redirect_path,
+                        "Content-Length": "0",
+                        "Connection": "close",
+                    }
+                    client_socket.sendall(self.responses.build(308, headers, b""))
+                    self.logger.info(
+                        f"{addr_str} - 308 Permanent Redirect: {req.path} -> {redirect_path}"
+                    )
+                    return
+
+                index_file = self.files.find_index(target)
+                if index_file:
+                    data = self.files.read_bytes(index_file)
+                    content_type = self.files.content_type(index_file)
+                    headers = {
+                        "Content-Type": content_type,
+                        "Content-Length": str(len(data)),
+                        "Connection": "close",
+                    }
+                    body = b"" if req.method == "HEAD" else data
+                    client_socket.sendall(self.responses.build(200, headers, body))
+                    self.logger.info(
+                        f"{addr_str} - 200 OK: {req.path} (index: {index_file.name}, {len(data)} bytes)"
+                    )
+                    return
+
                 if not self.files.allow_directory:
                     self.logger.warning(
                         f"{addr_str} - 403 Forbidden: Directory listing disabled for {req.path}"

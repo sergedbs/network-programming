@@ -7,6 +7,8 @@ PORT = 8080
 
 ENABLE_DIR_LISTING = True
 
+INDEX_FILES = ["index.html", "index.htm"]
+
 SUPPORTED_METHODS = {"GET", "HEAD"}
 
 LOG_LEVELS = {
@@ -20,6 +22,7 @@ DEFAULT_LOG_LEVEL = "info"
 
 STATUS_TEXT = {
     200: "OK",
+    308: "Permanent Redirect",
     400: "Bad Request",
     403: "Forbidden",
     404: "Not Found",
