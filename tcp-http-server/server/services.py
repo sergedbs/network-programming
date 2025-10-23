@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import TypedDict
 import mimetypes
+from .config import INDEX_FILES
 
 
 class DirectoryEntry(TypedDict):
@@ -54,9 +55,22 @@ class StaticFileService:
         if target.is_file():
             return target
 
-        if self.allow_directory and target.is_dir():
+        if target.is_dir():
             return target
 
+        return None
+
+    def find_index(self, directory: Path) -> Path | None:
+        """Return index file path if present in the directory."""
+        if not directory.is_dir():
+            return None
+        for name in INDEX_FILES:
+            candidate = directory / name
+            try:
+                if candidate.is_file():
+                    return candidate
+            except OSError:
+                continue
         return None
 
     def read_bytes(self, path: Path) -> bytes:

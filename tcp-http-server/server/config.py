@@ -1,11 +1,19 @@
 """Configuration constants for the HTTP server."""
 
+import os
 import logging
 
-HOST = "0.0.0.0"
-PORT = 8080
+HOST = os.getenv("SERVER_HOST", "0.0.0.0")
+PORT = int(os.getenv("SERVER_PORT", 8080))
 
-ENABLE_DIR_LISTING = True
+ENABLE_DIR_LISTING = os.getenv("ENABLE_DIR_LISTING", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+    "enabled",
+)
+
+INDEX_FILES = ["index.html", "index.htm"]
 
 SUPPORTED_METHODS = {"GET", "HEAD"}
 
@@ -16,10 +24,11 @@ LOG_LEVELS = {
     "error": logging.ERROR,
     "none": logging.CRITICAL + 1,
 }
-DEFAULT_LOG_LEVEL = "info"
+DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", "info").lower()
 
 STATUS_TEXT = {
     200: "OK",
+    308: "Permanent Redirect",
     400: "Bad Request",
     403: "Forbidden",
     404: "Not Found",
@@ -28,7 +37,7 @@ STATUS_TEXT = {
 }
 
 BACKLOG = 100
-CLIENT_TIMEOUT_SECONDS = 5
+CLIENT_TIMEOUT_SECONDS = int(os.getenv("CLIENT_TIMEOUT", "5"))
 HEADER_END = b"\r\n\r\n"
 MAX_HEADER_BYTES = 64 * 1024
 SERVER_NAME = "SimplePythonSocketHTTP/1.0"

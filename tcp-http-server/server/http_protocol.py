@@ -14,14 +14,11 @@ class HTTPRequest(NamedTuple):
 
 
 def normalize_path(raw_path: str) -> str:
-    """Normalize request path: strip query params, ensure leading slash, handle root."""
+    """Normalize request path: strip query params, ensure leading slash."""
     path = raw_path.split("?", 1)[0]
 
     if not path.startswith("/"):
         path = "/" + path
-
-    if path == "/":
-        path = "/index.html"
 
     return path
 
