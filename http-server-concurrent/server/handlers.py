@@ -5,6 +5,8 @@ import logging
 from .http_protocol import RequestReceiver, RequestParser, ResponseBuilder
 from .services import StaticFileService
 from .config import SUPPORTED_METHODS
+from .counter import RequestCounter
+from .rate_limiter import RateLimiter
 
 
 class ClientHandler:
@@ -17,21 +19,40 @@ class ClientHandler:
         files: StaticFileService,
         responses: ResponseBuilder,
         logger: logging.Logger | None = None,
+        counter: RequestCounter | None = None,
+        rate_limiter: RateLimiter | None = None,
     ):
         self.receiver = receiver
         self.parser = parser
         self.files = files
         self.responses = responses
         self.logger = logger or logging.getLogger(__name__)
+        self.counter = counter
+        self.rate_limiter = rate_limiter
 
     def handle(self, client_socket: socket.socket, client_addr: tuple = None) -> None:
         req = None
         addr_str = f"{client_addr[0]}:{client_addr[1]}" if client_addr else "unknown"
+        client_ip = client_addr[0] if client_addr else "unknown"
+
         try:
+            # Check rate limit first
+            if self.rate_limiter and not self.rate_limiter.is_allowed(client_ip):
+                self.logger.warning(
+                    f"{addr_str} - 429 Too Many Requests: Rate limit exceeded"
+                )
+                client_socket.sendall(self.responses.error(429))
+                return
+
             request_text = self.receiver.receive(client_socket)
             req = self.parser.parse(request_text)
 
             self.logger.info(f"{addr_str} - {req.method} {req.path} {req.version}")
+
+            # Increment counter for this path
+            if self.counter:
+                count = self.counter.increment(req.path)
+                self.logger.debug(f"Request count for {req.path}: {count}")
 
             if req.method not in SUPPORTED_METHODS:
                 self.logger.warning(
@@ -89,6 +110,12 @@ class ClientHandler:
                     return
 
                 entries = self.files.list_directory(target)
+                # Add request counts to directory entries if counter is available
+                if self.counter:
+                    for entry in entries:
+                        entry_path = entry["path"]
+                        entry["request_count"] = self.counter.get(entry_path)
+
                 response = self.responses.directory_listing(req.path, entries)
                 client_socket.sendall(response)
                 self.logger.info(

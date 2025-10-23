@@ -127,7 +127,7 @@ class TemplateService:
     def _generate_entry_rows(self, entries: list[dict[str, Any]]) -> str:
         """Generate table rows for directory entries."""
         if not entries:
-            return '<tr><td colspan="4" class="empty">Empty directory</td></tr>'
+            return '<tr><td colspan="5" class="empty">Empty directory</td></tr>'
 
         rows = []
         for entry in entries:
@@ -139,6 +139,7 @@ class TemplateService:
             )
             size = entry.get("size_formatted", "-")
             modified = entry.get("modified", "-")
+            request_count = entry.get("request_count", 0)
 
             row = f"""
                 <tr class="{entry_type}">
@@ -146,6 +147,7 @@ class TemplateService:
                     <td class="name"><a href="{entry["path"]}">{entry["name"]}</a></td>
                     <td class="size">{size}</td>
                     <td class="modified">{modified}</td>
+                    <td class="requests">{request_count}</td>
                 </tr>"""
             rows.append(row)
 

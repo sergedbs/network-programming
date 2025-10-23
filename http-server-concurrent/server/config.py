@@ -33,6 +33,7 @@ STATUS_TEXT = {
     403: "Forbidden",
     404: "Not Found",
     405: "Method Not Allowed",
+    429: "Too Many Requests",
     500: "Internal Server Error",
 }
 
@@ -41,3 +42,10 @@ CLIENT_TIMEOUT_SECONDS = int(os.getenv("CLIENT_TIMEOUT", "5"))
 HEADER_END = b"\r\n\r\n"
 MAX_HEADER_BYTES = 64 * 1024
 SERVER_NAME = "SimplePythonSocketHTTP/1.0"
+
+# Concurrency settings
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", "10"))
+
+# Rate limiting settings
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "5"))
+RATE_LIMIT_WINDOW = float(os.getenv("RATE_LIMIT_WINDOW", "1.0"))
