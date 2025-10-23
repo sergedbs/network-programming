@@ -187,11 +187,11 @@ python3 test/counter_test.py
 - **Testing**: `requests` library for HTTP testing
 - **Deployment**: Docker & Docker Compose
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🎓 Educational Resources
+## Educational Resources
 
 ### HTTP & Networking
 
