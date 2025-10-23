@@ -75,7 +75,7 @@ The server follows a **layered architecture** with clear separation of concerns:
 ## Project Structure
 
 ```txt
-tcp-http-server/
+http-server-basic/
 ├── server/                     # Server implementation
 │   ├── __init__.py            # Package initialization
 │   ├── __main__.py            # Entry point for `python -m server`
@@ -120,7 +120,7 @@ tcp-http-server/
 
    ```bash
    git clone https://github.com/sergedbs/network-programming.git
-   cd network-programming/tcp-http-server
+   cd network-programming/http-server-basic
    ```
 
 2. **No dependencies required!** This project uses only Python standard library.
@@ -231,13 +231,13 @@ SERVER_NAME = "SimplePythonSocketHTTP/1.0"
 **Build the image**:
 
 ```bash
-docker build -t tcp-http-server .
+docker build -t http-server-basic .
 ```
 
 **Run the container**:
 
 ```bash
-docker run -p 8080:8080 -v $(pwd)/public:/app/public:ro tcp-http-server
+docker run -p 8080:8080 -v $(pwd)/public:/app/public:ro http-server-basic
 ```
 
 ### Using Docker Compose
